@@ -111,48 +111,130 @@ const reels = [
   }
 ];
 
-var sum = '';
-
-reels.forEach(function (ele) {
-  sum = sum + `<div class="reel">
-                    <video autoplay loop muted src="${ele.video}"></video>
-                  
-                    <div class="bottom">
-                        <div class="user">
-                            <img src="${ele.userProfile}" alt="">
-                            <h4>${ele.username}</h4>
-                            <button>${ele.isFollowed?'unfollow':'follow'}</button>
-                        </div>
-                        <h3>${ele.caption}</h3>
-                    </div>
-
-                    <div class="right">
-
-                        <div class="like icon">
-                            <h4 class="like" >${ele.isLiked?'<i class="ri-heart-fill liked"></i>':'<i class="ri-heart-3-line">'}</i></h4> 
-                            <h6>${ele.likeCount}</h6>
-                        </div>
-
-                        <div class="comment icon">
-                            <h4 class="cmt" ><i class="ri-chat-1-line"></i></h4> 
-                            <h6>${ele.commentCount}</h6>
-                        </div>
-
-                        <div class="share icon">
-                            <h4 class="share" ><i class="ri-share-forward-line"></i></h4> 
-                            <h6>${ele.shareCount}</h6>
-                        </div>
-        
-                        <div class="menu icon">
-                            <h4 class="menu" ><i class="ri-more-2-line"></i></h4> 
-                        </div>
-                    </div>
-                   
-                </div>`
-  
-})
-
 var allreels = document.querySelector('.all-reels')
-allreels.innerHTML = sum;
 
+function addData(){
+  let sum = '';
+  reels.forEach(function (ele, idx) {
+    sum += `<div class="reel">
+                <video autoplay loop muted playsinline src="${ele.video}"></video>
+
+                <div class="bottom">
+                  <div class="user">
+                    <img src="${ele.userProfile}" alt="">
+                    <h4>${ele.username}</h4>
+                    <button class="follow-btn" data-idx="${idx}">${ele.isFollowed ? 'unfollow' : 'follow'}</button>
+                  </div>
+                  <h3>${ele.caption}</h3>
+                </div>
+
+                <div class="right">
+                  <!-- use data-idx on the container and avoid duplicate .like on child -->
+                  <div class="like icon" data-idx="${idx}">
+                    <h4 class="like-btn">${ele.isLiked
+                      ? '<i class="ri-heart-fill liked"></i>'
+                      : '<i class="ri-heart-3-line"></i>'}
+                    </h4>
+                    <h6>${ele.likeCount}</h6>
+                  </div>
+
+                  <div class="comment icon" data-idx="${idx}">
+                    <h4 class="cmt"><i class="ri-chat-1-line"></i></h4>
+                    <h6>${ele.commentCount}</h6>
+                  </div>
+
+                  <div class="share icon" data-idx="${idx}">
+                    <h4 class="share-btn"><i class="ri-share-forward-line"></i></h4>
+                    <h6>${ele.shareCount}</h6>
+                  </div>
+
+                  <div class="menu icon">
+                    <h4 class="menu"><i class="ri-more-2-line"></i></h4>
+                  </div>
+                </div>
+             </div>`;
+  });
+
+  allreels.innerHTML = sum;
+}
+
+addData();
+
+// delegated click listener: find closest .like.icon and read its data-idx
+allreels.addEventListener('click', function (evt) {
+
+   // FOLLOW / UNFOLLOW
+  const followBtn = evt.target.closest('.follow-btn');
+  
+  if (followBtn) {
+    const idx = followBtn.dataset.idx;
+    console.log("Follow button clicked at index:", idx);
+    
+
+    reels[idx].isFollowed = !reels[idx].isFollowed;
+
+    followBtn.textContent = reels[idx].isFollowed ? "unfollow" : "follow";
+
+    return;
+  }
+
+
+  const likeContainer = evt.target.closest('.like.icon');
+  if (likeContainer) {
+    const idx = Number(likeContainer.dataset.idx);
+    console.log('like clicked for index', idx);
+
+    // Example: toggle like in data and update UI (optional)
+    reels[idx].isLiked = !reels[idx].isLiked;
+    reels[idx].likeCount += reels[idx].isLiked ? 1 : -1;
+
+    // update only that like block instead of re-rendering everything:
+    const likeCountEl = likeContainer.querySelector('h6');
+    const iconEl = likeContainer.querySelector('i');
+    if (likeCountEl) likeCountEl.textContent = reels[idx].likeCount;
+    if (iconEl) {
+      iconEl.className = reels[idx].isLiked ? 'ri-heart-fill liked' : 'ri-heart-3-line';
+    }
+  }
+
+
+// SHARE HANDLER
+const shareContainer = evt.target.closest('.share.icon');
+if (shareContainer) {
+  const idx = Number(shareContainer.dataset.idx);
+  console.log('shared clicked for index', idx);
+
+
+  const videoFile = reels[idx].video;
+  const shareUrl = `${location.origin}/${videoFile}`;
+  const shareText = `${reels[idx].caption} — by ${reels[idx].username}`;
+
+  // Try native share API
+  if (navigator.share) {
+    navigator.share({
+      title: reels[idx].username,
+      text: shareText,
+      url: shareUrl
+    })
+    .then(() => {
+      reels[idx].shareCount++;
+      shareContainer.querySelector('h6').textContent = reels[idx].shareCount;
+    })
+    .catch(err => console.log("Share cancelled"));
+  } 
+  else {
+    // Fallback: copy link
+    navigator.clipboard.writeText(`${shareText} — ${shareUrl}`)
+      .then(() => {
+        alert("Link copied to clipboard!");
+        reels[idx].shareCount++;
+        shareContainer.querySelector('h6').textContent = reels[idx].shareCount;
+      });
+  }
+
+  return;
+}
+
+  
+});
 

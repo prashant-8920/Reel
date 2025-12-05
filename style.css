@@ -138,8 +138,17 @@ section{
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    width: 20px;
+    cursor: pointer;
 }
 
 .liked{
     color: red;
+}
+
+.like>div h4{
+    pointer-events: none;
+}
+.like>div h6{
+    pointer-events: none;
 }
