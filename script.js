@@ -130,6 +130,11 @@ function addData(){
 
                 <div class="right">
                   <!-- use data-idx on the container and avoid duplicate .like on child -->
+       
+                   <div class="mute icon" data-idx="${idx}">
+                      <h4 class="mute-btn"><i class="ri-volume-mute-fill"></i></h4>
+                    </div>
+                  
                   <div class="like icon" data-idx="${idx}">
                     <h4 class="like-btn">${ele.isLiked
                       ? '<i class="ri-heart-fill liked"></i>'
@@ -158,12 +163,56 @@ function addData(){
   allreels.innerHTML = sum;
 }
 
-addData();
 
-// delegated click listener: find closest .like.icon and read its data-idx
+function setupAutoMute() {
+  const reelsEls = document.querySelectorAll('.reel');
+  const videos = document.querySelectorAll('.reel video');
+
+  // start: sab pause + mute
+  videos.forEach(v => {
+    v.muted = true;
+    v.pause();
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        // sabko pause + mute
+        videos.forEach(v => {
+          v.muted = true;
+          v.pause();
+          const r = v.closest('.reel');
+          const ic = r.querySelector('.mute.icon i');
+          if (ic) ic.className = 'ri-volume-mute-fill';
+        });
+
+        // sirf visible reel ka video play + unmute
+        const video = entry.target.querySelector('video');
+        const muteIcon = entry.target.querySelector('.mute.icon i');
+
+        if (video) {
+          video.muted = false;
+          video.play();
+        }
+        if (muteIcon) {
+          muteIcon.className = "ri-volume-up-fill";
+        }
+      }
+    });
+  }, {
+    threshold: 0.6
+  });
+
+  reelsEls.forEach(reel => observer.observe(reel));
+}
+
+
+addData();
+setupAutoMute() ;
+
 allreels.addEventListener('click', function (evt) {
 
-   // FOLLOW / UNFOLLOW
+   //-------------- FOLLOW/UNFOLLOW
   const followBtn = evt.target.closest('.follow-btn');
   
   if (followBtn) {
@@ -178,7 +227,7 @@ allreels.addEventListener('click', function (evt) {
     return;
   }
 
-
+  //-----------------LIKE/UNLIKE
   const likeContainer = evt.target.closest('.like.icon');
   if (likeContainer) {
     const idx = Number(likeContainer.dataset.idx);
@@ -195,10 +244,11 @@ allreels.addEventListener('click', function (evt) {
     if (iconEl) {
       iconEl.className = reels[idx].isLiked ? 'ri-heart-fill liked' : 'ri-heart-3-line';
     }
+    return ;
   }
 
 
-// SHARE HANDLER
+//---------------------SHARE HANDLER
 const shareContainer = evt.target.closest('.share.icon');
 if (shareContainer) {
   const idx = Number(shareContainer.dataset.idx);
@@ -209,7 +259,7 @@ if (shareContainer) {
   const shareUrl = `${location.origin}/${videoFile}`;
   const shareText = `${reels[idx].caption} — by ${reels[idx].username}`;
 
-  // Try native share API
+  //---------------------Try native share API
   if (navigator.share) {
     navigator.share({
       title: reels[idx].username,
@@ -223,7 +273,7 @@ if (shareContainer) {
     .catch(err => console.log("Share cancelled"));
   } 
   else {
-    // Fallback: copy link
+    //--------------------Fallback: copy link
     navigator.clipboard.writeText(`${shareText} — ${shareUrl}`)
       .then(() => {
         alert("Link copied to clipboard!");
@@ -231,10 +281,27 @@ if (shareContainer) {
         shareContainer.querySelector('h6').textContent = reels[idx].shareCount;
       });
   }
+  return;
+}
+
+//------------------------MUTE/UNMUTE HANDLER
+const muteContainer = evt.target.closest('.mute.icon');
+if (muteContainer) {
+  const idx = Number(muteContainer.dataset.idx);
+  console.log("mute clicked for index", idx);
+
+  const reelElement = muteContainer.closest('.reel');
+  const video = reelElement.querySelector('video');
+
+  video.muted = !video.muted;
+
+  const icon = muteContainer.querySelector('i');
+  icon.className = video.muted 
+      ? "ri-volume-mute-fill" 
+      : "ri-volume-up-fill";
 
   return;
 }
 
-  
 });
 
