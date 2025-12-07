@@ -118,6 +118,15 @@ function addData(){
   reels.forEach(function (ele, idx) {
     sum += `<div class="reel">
                 <video autoplay loop muted playsinline src="${ele.video}"></video>
+                 
+
+                <div class="play-pause-anim"></div>
+                
+                <!-- big heart animation for double-like -->
+                <div class="dbl-like-anim">
+                  <i class="ri-heart-3-fill"></i>
+                </div>
+
 
                 <div class="bottom">
                   <div class="user">
@@ -212,6 +221,45 @@ setupAutoMute() ;
 
 allreels.addEventListener('click', function (evt) {
 
+
+
+   // PLAY / PAUSE ON VIDEO CLICK
+  // const videoEl = evt.target.closest('video');
+
+  //   if (videoEl) 
+  //     {
+  //        videoEl.paused ? videoEl.play() : videoEl.pause();
+  //        console.log('video play/pause toggled');
+  //         return;
+  //     }
+
+  const videoEl = evt.target.closest('video');
+
+if (videoEl) {
+
+    const reel = videoEl.closest('.reel');
+    const anim = reel.querySelector('.play-pause-anim');
+
+    if (videoEl.paused) {
+        videoEl.play();
+        anim.innerHTML = `<i class="ri-play-circle-fill"></i>`;
+    } else {
+        videoEl.pause();
+        anim.innerHTML = `<i class="ri-pause-circle-fill"></i>`;
+    }
+
+    // SHOW ANIMATION
+    anim.classList.add("show");
+
+    // HIDE AFTER 400ms
+    setTimeout(() => anim.classList.remove("show"), 400);
+
+    return;
+}
+
+
+
+
    //-------------- FOLLOW/UNFOLLOW
   const followBtn = evt.target.closest('.follow-btn');
   
@@ -305,3 +353,38 @@ if (muteContainer) {
 
 });
 
+// dblclick event for like!!
+
+allreels.addEventListener('dblclick', function (evt) {
+  const reelEl = evt.target.closest('.reel');
+  if (!reelEl) return;
+
+  // find like container + index
+  const likeContainer = reelEl.querySelector('.like.icon');
+  if (!likeContainer) return;
+
+  const idx = Number(likeContainer.dataset.idx);
+
+  // mark as liked (only increase if not already liked)
+  if (!reels[idx].isLiked) {
+    reels[idx].isLiked = true;
+    reels[idx].likeCount++;
+
+    const likeCountEl = likeContainer.querySelector('h6');
+    const iconEl = likeContainer.querySelector('i');
+
+    if (likeCountEl) likeCountEl.textContent = reels[idx].likeCount;
+    if (iconEl) iconEl.className = 'ri-heart-fill liked';
+  }
+
+  // show heart animation
+  const anim = reelEl.querySelector('.dbl-like-anim');
+  if (!anim) return;
+
+  anim.classList.add('show');
+
+  // hide after a short time
+  setTimeout(() => {
+    anim.classList.remove('show');
+  }, 500);
+});
